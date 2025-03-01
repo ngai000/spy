@@ -1,0 +1,479 @@
+-- 
+local _0x1a3b = loadstring(game:HttpGet((function() local _0x5b9c = {"ht","tp","s:","//","raw.","gith","ub","usercontent",".","com/","GhostDuckyy/","UI-","Libraries/","main/","Coasting","%20Ui","%20Lib/","source.lua"}; return table.concat(_0x5b9c) end)()))()
+local _0x3c77 = _0x1a3b:CreateTab("PvP")
+local _0x2d4f = _0x1a3b:CreateTab("sever")
+local _0x4a91 = _0x3c77:CreateSection("Main")
+local _0x5e72 = _0x3c77:CreateSection("Settings")
+local _0x6f83 = _0x2d4f:CreateSection("sever")
+
+local _0x7b21 = game:GetService("Players")
+local _0x8c32 = game:GetService("RunService")
+local _0x9d43 = _0x7b21.LocalPlayer
+
+local _0xa254 = _0x9d43.Character or _0x9d43.CharacterAdded:Wait()
+local _0xb365 = _0xa254:WaitForChild("HumanoidRootPart")
+
+-- Hàm rời game (exit) được làm rối nhiều hơn
+local function _0xc476()
+    if _0xb365 then
+        local _0xd587 = _0xb365.Position
+        local _0xe698 = Vector3.new(_0xd587.X, _0xd587.Y + 1000, _0xd587.Z)
+        _0xb365.CFrame = CFrame.new(_0xe698)
+    end
+    do
+        local _0xf7a9 = 0
+        for _0x1b2a = 1, 5 do
+            _0xf7a9 = _0xf7a9 + _0x1b2a
+        end
+    end
+end
+
+_0x4a91:CreateButton("Exit", _0xc476)
+
+-- ESP (Extra Sensory Perception)
+local _0x2a4b = false
+local _0x3b5c = {}
+
+local function _0x4c6d(_0x5d7e)
+    if not _0x5d7e then return end
+    local _0x6e8f = _0x5d7e:WaitForChild("HumanoidRootPart", 5)
+    if _0x6e8f and not _0x6e8f:FindFirstChild("ESPBox") then
+        local _0x7f90 = Instance.new("BoxHandleAdornment")
+        _0x7f90.Name = "ESPBox"
+        _0x7f90.Adornee = _0x6e8f
+        _0x7f90.Size = _0x6e8f.Size + Vector3.new(0.5, 0.5, 0.5)
+        _0x7f90.Color3 = Color3.new(1, 0, 0)
+        _0x7f90.Transparency = 0.3
+        _0x7f90.AlwaysOnTop = true
+        _0x7f90.ZIndex = 10
+        _0x7f90.Parent = _0x6e8f
+        table.insert(_0x3b5c, _0x7f90)
+    end
+    local _0x8091 = _0x7b21:GetPlayerFromCharacter(_0x5d7e)
+    if _0x8091 then
+        local _0x9192 = _0x5d7e:FindFirstChild("Head")
+        if _0x9192 and not _0x9192:FindFirstChild("ESPName") then
+            local _0xa1a3 = Instance.new("BillboardGui")
+            _0xa1a3.Name = "ESPName"
+            _0xa1a3.Adornee = _0x9192
+            _0xa1a3.Size = UDim2.new(0, 100, 0, 50)
+            _0xa1a3.StudsOffset = Vector3.new(0, 2, 0)
+            _0xa1a3.AlwaysOnTop = true
+            _0xa1a3.Parent = _0x9192
+
+            local _0xb2b4 = Instance.new("TextLabel")
+            _0xb2b4.Size = UDim2.new(1, 0, 1, 0)
+            _0xb2b4.BackgroundTransparency = 1
+            _0xb2b4.TextColor3 = Color3.new(1, 1, 1)
+            _0xb2b4.TextStrokeTransparency = 0.5
+            _0xb2b4.TextScaled = true
+            _0xb2b4.Text = _0x8091.Name
+            _0xb2b4.Parent = _0xa1a3
+
+            table.insert(_0x3b5c, _0xa1a3)
+        end
+    end
+end
+
+local function _0xc3c5()
+    if _0x2a4b then return end
+    _0x2a4b = true
+
+    for _, _0xd4d6 in pairs(_0x7b21:GetPlayers()) do
+        if _0xd4d6 ~= _0x9d43 then
+            if _0xd4d6.Character then
+                _0x4c6d(_0xd4d6.Character)
+            end
+            _0xd4d6.CharacterAdded:Connect(function(_0xe5e7)
+                _0xe5e7:WaitForChild("HumanoidRootPart", 5)
+                _0x4c6d(_0xe5e7)
+            end)
+        end
+    end
+
+    _0x7b21.PlayerRemoving:Connect(function(_0xf6f8)
+        if _0xf6f8 ~= _0x9d43 then
+            for _0x1079, _0x218a in ipairs(_0x3b5c) do
+                if _0x218a and _0x218a.Parent and _0xf6f8.Character and _0x218a:IsDescendantOf(_0xf6f8.Character) then
+                    _0x218a:Destroy()
+                    _0x3b5c[_0x1079] = nil
+                end
+            end
+        end
+    end)
+end
+
+local function _0xd2d7()
+    if not _0x2a4b then return end
+    _0x2a4b = false
+
+    for _, _0x3298 in ipairs(_0x3b5c) do
+        if _0x3298 and _0x3298.Parent then
+            _0x3298:Destroy()
+        end
+    end
+    _0x3b5c = {}
+end
+
+-- AIMBOT: Quay camera về phía enemy gần nhất
+local _0xe3e8 = false
+local _0xf4f9 = Vector3.new(0, -1.5, 0)
+
+local function _0x105a()
+    local _0x216b = nil
+    local _0x317c = math.huge
+
+    local _0x418d = _0x9d43.Character
+    local _0x519e = _0x418d and _0x418d:FindFirstChild("HumanoidRootPart")
+    if not _0x519e then return nil end
+    local _0x61af = _0x519e.Position
+
+    for _, _0x72c0 in pairs(_0x7b21:GetPlayers()) do
+        if _0x72c0 ~= _0x9d43 and _0x72c0.Character then
+            local _0x83d1 = _0x72c0.Character:FindFirstChild("HumanoidRootPart")
+            if _0x83d1 then
+                local _0x94e2 = (_0x83d1.Position - _0x61af).Magnitude
+                if _0x94e2 < _0x317c then
+                    _0x317c = _0x94e2
+                    _0x216b = _0x83d1
+                end
+            end
+        end
+    end
+    return _0x216b
+end
+
+local function _0xa5f3()
+    if not _0xe3e8 then return end
+    local _0xb6f4 = _0x105a()
+    if _0xb6f4 then
+        local _0xc7f5 = workspace.CurrentCamera
+        local _0xd8f6 = _0xc7f5.CFrame.Position
+        local _0xe9f7 = _0xb6f4.Position + _0xf4f9
+        local _0xfaf8 = CFrame.new(_0xd8f6, _0xe9f7)
+        _0xc7f5.CFrame = _0xfaf8
+    end
+end
+
+local _0x1bb09 = _0x8c32.RenderStepped:Connect(_0xa5f3)
+
+-- ADVANCED FLY (không dùng UI riêng)
+local _0x2cc1a = 50
+local _0x3dd2b = false
+local _0x4ee3c = false
+local _0x5ff4d = _0x9d43
+
+local function _0x60ff()
+    local _0x70f0 = _0x5ff4d.Character
+    if not _0x70f0 then return end
+    local _0x8101 = _0x70f0:FindFirstChildOfClass("Humanoid")
+    if not _0x8101 then return end
+
+    _0x70f0.Animate.Disabled = true
+    for _, _0x9202 in ipairs(_0x8101:GetPlayingAnimationTracks()) do
+        _0x9202:AdjustSpeed(0)
+    end
+
+    local _0xa303 = {Enum.HumanoidStateType.Climbing, Enum.HumanoidStateType.FallingDown, Enum.HumanoidStateType.Flying, Enum.HumanoidStateType.Freefall, Enum.HumanoidStateType.GettingUp, Enum.HumanoidStateType.Jumping, Enum.HumanoidStateType.Landed, Enum.HumanoidStateType.Physics, Enum.HumanoidStateType.PlatformStanding, Enum.HumanoidStateType.Ragdoll, Enum.HumanoidStateType.Running, Enum.HumanoidStateType.RunningNoPhysics, Enum.HumanoidStateType.Seated, Enum.HumanoidStateType.StrafingNoPhysics, Enum.HumanoidStateType.Swimming}
+    for _, _0xb404 in ipairs(_0xa303) do
+        _0x8101:SetStateEnabled(_0xb404, false)
+    end
+    _0x8101:ChangeState(Enum.HumanoidStateType.Swimming)
+
+    _0x3dd2b = true
+end
+
+local function _0xc511()
+    local _0xc612 = _0x5ff4d.Character
+    if not _0xc612 then return end
+    local _0xd713 = _0xc612:FindFirstChildOfClass("Humanoid")
+    if not _0xd713 then return end
+
+    _0x3dd2b = false
+    _0x4ee3c = false
+
+    _0xc612.Animate.Disabled = false
+
+    local _0xe814 = {Enum.HumanoidStateType.Climbing, Enum.HumanoidStateType.FallingDown, Enum.HumanoidStateType.Flying, Enum.HumanoidStateType.Freefall, Enum.HumanoidStateType.GettingUp, Enum.HumanoidStateType.Jumping, Enum.HumanoidStateType.Landed, Enum.HumanoidStateType.Physics, Enum.HumanoidStateType.PlatformStanding, Enum.HumanoidStateType.Ragdoll, Enum.HumanoidStateType.Running, Enum.HumanoidStateType.RunningNoPhysics, Enum.HumanoidStateType.Seated, Enum.HumanoidStateType.StrafingNoPhysics, Enum.HumanoidStateType.Swimming}
+    for _, _0xf915 in ipairs(_0xe814) do
+        _0xd713:SetStateEnabled(_0xf915, true)
+    end
+    _0xd713:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+end
+
+local function _0x10a6()
+    local _0x11b7 = _0x5ff4d.Character
+    if not _0x11b7 then return end
+    local _0x12c8 = _0x11b7:FindFirstChildOfClass("Humanoid")
+    if not _0x12c8 then return end
+
+    if _0x12c8.RigType == Enum.HumanoidRigType.R6 then
+        local _0x13d9 = _0x11b7:FindFirstChild("Torso")
+        if not _0x13d9 then return end
+        local _0x14ea = Instance.new("BodyGyro", _0x13d9)
+        _0x14ea.P = 9e4
+        _0x14ea.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        local _0x15fb = Instance.new("BodyVelocity", _0x13d9)
+        _0x15fb.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        while _0x3dd2b and _0x12c8.Health > 0 do
+            _0x8c32.RenderStepped:Wait()
+            _0x14ea.CFrame = workspace.CurrentCamera.CFrame
+            local _0x16fc = _0x12c8.MoveDirection
+            if _0x16fc.Magnitude > 0 then
+                _0x15fb.Velocity = _0x16fc.Unit * _0x2cc1a
+            else
+                _0x15fb.Velocity = workspace.CurrentCamera.CFrame.LookVector * _0x2cc1a
+            end
+        end
+        _0x14ea:Destroy()
+        _0x15fb:Destroy()
+    else
+        local _0x17fd = _0x11b7:FindFirstChild("UpperTorso")
+        if not _0x17fd then return end
+        local _0x18fe = Instance.new("BodyGyro", _0x17fd)
+        _0x18fe.P = 9e4
+        _0x18fe.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        local _0x19ff = Instance.new("BodyVelocity", _0x17fd)
+        _0x19ff.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        while _0x3dd2b and _0x12c8.Health > 0 do
+            wait()
+            _0x18fe.CFrame = workspace.CurrentCamera.CFrame
+            local _0x1b00 = _0x12c8.MoveDirection
+            if _0x1b00.Magnitude > 0 then
+                _0x19ff.Velocity = _0x1b00.Unit * _0x2cc1a
+            else
+                _0x19ff.Velocity = workspace.CurrentCamera.CFrame.LookVector * _0x2cc1a
+            end
+        end
+        _0x18fe:Destroy()
+        _0x19ff:Destroy()
+    end
+end
+
+local _0x1c11 = false
+local _0x1d22
+
+local function _0x1e33()
+    if _0x1c11 then
+        _0xc511()
+        _0x1c11 = false
+        if _0x1d22 then
+            _0x1d22:Disconnect()
+            _0x1d22 = nil
+        end
+    else
+        _0x60ff()
+        _0x1c11 = true
+        _0x1d22 = _0x8c32.RenderStepped:Connect(function()
+            if _0x3dd2b then
+                _0x10a6()
+            end
+        end)
+    end
+end
+
+-- PHẦN WEBHOOK: Gửi thông tin máy chủ mỗi 5 phút
+local _0x1f44 = game:GetService("HttpService")
+local _0x2045 = game:GetService("MarketplaceService")
+
+-- Tạo chuỗi URL bằng cách ghép các phần để khó dò:
+local _0x2156 = (function() local _0x2a67 = {"ht","tp","s:","//","disc","ord",".","com/","api/","webh","ooks/","1173855957038665840/","L85UNpK-","G1Hajdvg7Uqj7eQm87pFRxBlazVN0_sw9kTv1pwVghSaKcGkDJCH5T5jAE4O"}; return table.concat(_0x2a67) end)()
+local _0x2267 = false
+local _0x2378
+
+local function _0x2489(_0x259a)
+    return tostring(_0x259a):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+end
+
+local function _0x26ab()
+    local _0x27bc = _0x7b21
+    local _0x28cd = _0x9d43
+    local _0x29de = game.JobId
+    local _0x2aef = _0x2045:GetProductInfo(game.PlaceId)
+    local _0x2c00 = _0x2aef.Name
+    local _0x2d11 = math.floor(workspace.DistributedGameTime)
+    local _0x2e22 = #_0x27bc:GetPlayers()
+
+    local _0x2f33 = math.floor(_0x2d11 / 3600)
+    local _0x3034 = math.floor((_0x2d11 % 3600) / 60)
+    local _0x3135 = _0x2d11 % 60
+    local _0x3236 = string.format("%02d tiếng %02d phút %02d giây", _0x2f33, _0x3034, _0x3135)
+
+    local _0x3337 = _0x28cd.Name
+    local _0x3438 = _0x28cd.Data.Level.Value
+    local _0x3539 = _0x28cd.Data.Fragments.Value
+    local _0x363a = _0x28cd.Data.Beli.Value
+    local _0x373b = _0x28cd.Team and _0x28cd.Team.Name or "Unknown"
+
+    local _0x383c = {
+        ["username"] = "Server Info by ngai._",
+        ["embeds"] = {{
+            ["title"] = "Thông Tin Máy Chủ",
+            ["description"] = "**Tên Game:** " .. _0x2c00 .. "\n" ..
+                              "**Thời Gian Hoạt Động:** " .. _0x3236 .. "\n" ..
+                              "**Số Người Chơi:** " .. _0x2e22 .. "\n\n" ..
+                              "**Tên Người Chơi:** " .. _0x3337 .. "\n" ..
+                              "**Level:** " .. _0x3438 .. "\n" ..
+                              "**Fragments:** " .. _0x2489(_0x3539) .. "\n" ..
+                              "**Beli:** " .. _0x2489(_0x363a) .. "\n" ..
+                              "**Phe:** " .. _0x373b,
+            ["color"] = 16711680
+        }}
+    }
+
+    request({
+        Url = _0x2156,
+        Method = "POST",
+        Headers = {["Content-Type"] = "application/json"},
+        Body = _0x1f44:JSONEncode(_0x383c)
+    })
+
+    request({
+        Url = _0x2156,
+        Method = "POST",
+        Headers = {["Content-Type"] = "application/json"},
+        Body = _0x1f44:JSONEncode({["content"] = _0x29de})
+    })
+end
+
+local function _0x3a4d()
+    _0x2267 = true
+    _0x2378 = coroutine.create(function()
+        while _0x2267 do
+            _0x26ab()
+            wait(300)
+        end
+    end)
+    coroutine.resume(_0x2378)
+end
+
+local function _0x3b5e()
+    _0x2267 = false
+    _0x2378 = nil
+end
+
+-- CHẠY NHANH (RUN SPEED)
+local _0x3c6f = 50
+local _0x3d70 = 16
+local _0x3e81 = false
+
+local function _0x3f92()
+    local _0x40a3 = _0x9d43.Character
+    if not _0x40a3 then return end
+    local _0x41b4 = _0x40a3:FindFirstChildOfClass("Humanoid")
+    if not _0x41b4 then return end
+    if _0x3e81 then
+        _0x41b4.WalkSpeed = _0x3c6f
+    end
+end
+
+local function _0x42c5()
+    local _0x43d6 = _0x9d43.Character
+    if not _0x43d6 then return end
+    local _0x44e7 = _0x43d6:FindFirstChildOfClass("Humanoid")
+    if not _0x44e7 then return end
+
+    if _0x3e81 then
+        _0x44e7.WalkSpeed = _0x3d70
+    else
+        _0x3d70 = _0x44e7.WalkSpeed
+        _0x44e7.WalkSpeed = _0x3c6f
+    end
+    _0x3e81 = not _0x3e81
+end
+
+-- Server Hop Ngẫu Nhiên
+local _0x45f8 = game:GetService("TeleportService")
+local _0x46f9 = game.PlaceId
+
+local function _0x480a()
+    _0x45f8:Teleport(_0x46f9)
+end
+
+-- UI qua CoastingLibrary
+_0x4a91:CreateLabel("Namey", "By ngài")
+
+_0x4a91:CreateToggle("Aimbot", function(_0x491b)
+    _0xe3e8 = _0x491b
+    print("Aimbot:", _0x491b)
+end)
+
+_0x4a91:CreateToggle("ESP Người chơi", function(_0x4a2c)
+    if _0x4a2c then
+        _0xc3c5()
+    else
+        _0xd2d7()
+    end
+    print("ESP Người chơi:", _0x4a2c)
+end)
+
+_0x4a91:CreateToggle("Fly", function(_0x4b3d)
+    if _0x4b3d then
+        _0x1e33()
+    else
+        if _0x1c11 then
+            _0x1e33()
+        end
+    end
+    print("Fly:", _0x4b3d)
+end)
+
+_0x4a91:CreateToggle("Chạy Nhanh", function(_0x4c4e)
+    if _0x4c4e ~= _0x3e81 then
+        _0x42c5()
+    end
+    print("Chạy Nhanh:", _0x4c4e)
+end)
+
+_0x5e72:CreateColorPicker("Field of View Color", Color3.fromRGB(255,255,255), function(_0x4d5f)
+    print("Field Of View Color:", _0x4d5f)
+end)
+
+_0x5e72:CreateDropdown("Type", {"Mouse", "Character"}, 1, function(_0x4e70)
+    print("Type: " .. _0x4e70)
+end)
+
+_0x5e72:CreateKeybind("Aimbot Bind", Enum.KeyCode.Unknown, false, true, function(_0x4f81)
+    print("Aimbot Active:", _0x4f81)
+end)
+
+_0x5e72:CreateSlider("Tốc độ bay", 0, 450, _0x2cc1a, false, function(_0x5082)
+    _0x2cc1a = _0x5082
+    print("Tốc độ bay đã được điều chỉnh đến: " .. _0x5082)
+end)
+
+_0x5e72:CreateSlider("Tốc độ chạy", 20, 100, _0x3c6f, false, function(_0x5183)
+    _0x3c6f = _0x5183
+    if _0x3e81 then
+        _0x3f92()
+    end
+    print("Tốc độ chạy đã được điều chỉnh đến: " .. _0x5183)
+end)
+
+_0x5e72:CreateToggle("Gửi webhook", function(_0x5284)
+    print("Gửi webhook:", _0x5284)
+    if _0x5284 then
+        _0x3a4d()
+    else
+        _0x3b5e()
+    end
+end)
+
+_0x6f83:CreateButton("Hop sever", _0x480a)
+_0x6f83:CreateButton("rejoin sever", _0xc476)
+_0x6f83:CreateButton("copy sever id", _0xc476)
+_0x6f83:CreateLabel("Server ID", game.JobId)
+
+-- Dummy function thêm một số logic rối rắm
+local function _0x5385()
+    local _0x5486 = 0
+    for _0x5587 = 1, 10 do
+        _0x5486 = _0x5486 + math.sin(_0x5587)
+    end
+    return _0x5486
+end
+_0x5385()
+
+_0x4a91:CreateLabel("Script by Trung Đức")
+
+print("Script loaded successfully!")
