@@ -471,7 +471,7 @@ function CheckLevel()
             QuestLv = 1;
             NameMon = "Sky Bandit";
             CFrameQ = CFrame.new(- 4842.1372070313, 717.69543457031, - 2623.0483398438);
-            CFrameMon = CFrame.new(- 4955.6411132813, 365.46365356445, - 2908.1865234375);
+            CFrameMon = CFrame.new(- 4953.6411132813, 295.46365356445, - 2899.1865234375);
         elseif ((v197 == 175) or (v197 <= 189) or (SelectMonster == "Dark Master")) then
             Ms = "Dark Master";
             NameQuest = "SkyQuest";
