@@ -323,7 +323,7 @@ local v16 = {
         Title = "Thông Tin"
     }),
     Main = v15:AddTab({
-        Title = "Cày"
+        Title = "Main fam"
     }),
     Sea = v15:AddTab({
         Title = "Sự Kiện"
