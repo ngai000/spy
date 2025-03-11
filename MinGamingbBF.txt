@@ -2684,10 +2684,6 @@ v16.Home:AddParagraph({
     Title = "Nhà phát triển",
     Content = "Discord: Ngai._"
 });
-local v100 = v16.Home:AddParagraph({
-    Title = "Thời Gian",
-    Content = ""
-});
 _G.FastAttackStrix_Mode = "Super Fast Attack";
 spawn(function()
     while wait() do
