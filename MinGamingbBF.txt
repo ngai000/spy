@@ -2681,6 +2681,10 @@ v16.Home:AddButton({
     end
 });
 v16.Home:AddParagraph({
+    Title = "Nhà phát triển",
+    Content = "Discord: Ngai._"
+});
+local v100 = v16.Home:AddParagraph({
     Title = "Thời Gian",
     Content = ""
 });
