@@ -2743,7 +2743,7 @@ task.spawn(function()
     end
 end);
 local v49 = v16.Main:AddToggle("ToggleLevel", {
-    Title = "Cày Cấp",
+    Title = "Auto Fam Level",
     Description = "",
     Default = false
 });
@@ -2803,7 +2803,7 @@ spawn(function()
     end
 end);
 local v50 = v16.Main:AddToggle("ToggleMobAura", {
-    Title = "Đấm Quái Gần",
+    Title = "Fam tất cả quái trên map",
     Description = "",
     Default = false
 });
