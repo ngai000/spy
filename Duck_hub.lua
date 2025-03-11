@@ -310,10 +310,10 @@ v5:Destroy();
 -- end);
 local v14 = loadstring(game:HttpGet("https://raw.githubusercontent.com/obfalchx/testfluent/refs/heads/main/FluentTrau"))();
 local v15 = v14:CreateWindow({
-    Title = "Min Gaming",
-    SubTitle = "",
+    Title = "Duck hub",
+    SubTitle = "Version: beta",
     TabWidth = 160,
-    Theme = "Light",
+    Theme = "Dark",
     Acrylic = false,
     Size = UDim2.fromOffset(500, 320),
     MinimizeKey = Enum.KeyCode.End
@@ -323,25 +323,25 @@ local v16 = {
         Title = "Thông Tin"
     }),
     Main = v15:AddTab({
-        Title = "Cày"
+        Title = "Main"
     }),
     Sea = v15:AddTab({
-        Title = "Sự Kiện"
+        Title = "Sea event"
     }),
     ITM = v15:AddTab({
-        Title = "Vật Phẩm"
+        Title = "Items"
     }),
     Setting = v15:AddTab({
-        Title = "Cài Đặt"
+        Title = "Settings"
     }),
     Status = v15:AddTab({
-        Title = "Máy Chủ"
+        Title = "Status"
     }),
     Stats = v15:AddTab({
-        Title = "Chỉ Số"
+        Title = "Stats
     }),
     Player = v15:AddTab({
-        Title = "Người Chơi"
+        Title = "Player"
     }),
     Teleport = v15:AddTab({
         Title = "Dịch Chuyển"
@@ -350,7 +350,7 @@ local v16 = {
         Title = "Giả"
     }),
     Fruit = v15:AddTab({
-        Title = "Trái"
+        Title = "Fruit + Esp"
     }),
     Raid = v15:AddTab({
         Title = "Tập Kích"
@@ -3871,7 +3871,7 @@ if Sea3 then
             _G.AutoFindPrehistoric = false;
             if not v513 then
                 v14:Notify({
-                    Title = "Min Gaming",
+                    Title = "Duck hub",
                     Content = "Đảo Dung Nham Tìm Thấy",
                     Duration = 10
                 });
@@ -3965,7 +3965,7 @@ if Sea3 then
             _G.AutoFindMirage = false;
             if not v513 then
                 v14:Notify({
-                    Title = "Min Gaming",
+                    Title = "Duck hub",
                     Content = "Đảo Bí Ẩn Tìm Thấy",
                     Duration = 10
                 });
@@ -4059,7 +4059,7 @@ if Sea3 then
             _G.AutoFindFrozen = false;
             if not v513 then
                 v14:Notify({
-                    Title = "Min Gaming",
+                    Title = "Duck hub",
                     Content = "Đảo Leviathan Tìm Thấy",
                     Duration = 10
                 });
@@ -9321,7 +9321,7 @@ spawn(function()
     end
 end);
 v14:Notify({
-    Title = "Min Gaming",
-    Content = "Tải Xong",
+    Title = "Duck hub",
+    Content = "Đã sẵn sàng!",
     Duration = 10
 });
