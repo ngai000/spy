@@ -1,0 +1,124 @@
+
+game:GetService("StarterGui"):SetCore("SendNotification",{
+Title = "🍎Blox Fruit Fix Lag🍎",
+Text = "create by ngài 🎩", 
+Duration = 3
+})
+-- Tạo GUI để hiển thị FPS
+local ScreenGui = Instance.new("ScreenGui")
+local TextLabel = Instance.new("TextLabel")
+local ToggleButton = Instance.new("TextButton")
+
+-- Đặt tên và bố cục cho GUI
+ScreenGui.Name = "FPSDisplay"
+ScreenGui.Parent = game:GetService("CoreGui")
+
+TextLabel.Parent = ScreenGui
+TextLabel.Size = UDim2.new(0, 100, 0, 30)
+TextLabel.Position = UDim2.new(0, 10, 0, 10)
+TextLabel.BackgroundTransparency = 0.5
+TextLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+TextLabel.TextSize = 14
+TextLabel.TextColor3 = Color3.new(1, 1, 1)
+TextLabel.TextStrokeTransparency = 0.5
+TextLabel.Font = Enum.Font.SourceSansBold
+TextLabel.Text = "FPS: Calculating..."
+
+ToggleButton.Parent = ScreenGui
+ToggleButton.Size = UDim2.new(0, 100, 0, 30)
+ToggleButton.Position = UDim2.new(0, 10, 0, 50)
+ToggleButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+ToggleButton.TextColor3 = Color3.new(1, 1, 1)
+ToggleButton.Text = "Fix Lag OFF"
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.TextSize = 14
+
+-- Biến trạng thái
+local isLagFixEnabled = false
+
+-- Biến để tính FPS
+local lastTime = tick()
+local frameCount = 0
+
+-- Cập nhật FPS
+game:GetService("RunService").RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local currentTime = tick()
+    if currentTime - lastTime >= 1 then
+        local fps = frameCount / (currentTime - lastTime)
+        TextLabel.Text = string.format("FPS: %.0f", fps)
+        frameCount = 0
+        lastTime = currentTime
+    end
+end)
+
+-- Script giảm lag hợp pháp trong Roblox
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+
+local function optimizeGraphics()
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 100000
+    Lighting.Brightness = 2
+    Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+
+    for _, part in pairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Material = Enum.Material.SmoothPlastic
+            part.CastShadow = false
+        elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then
+            part.Enabled = false
+        elseif part:IsA("Decal") or part:IsA("Texture") then
+            part.Transparency = 0.5
+        end
+    end
+
+    local player = Players.LocalPlayer
+    if player.Character then
+        for _, obj in pairs(player.Character:GetDescendants()) do
+            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+                obj.Enabled = false
+            end
+        end
+    end
+end
+
+local function resetGraphics()
+    Lighting.GlobalShadows = true
+    Lighting.FogEnd = 1000
+    Lighting.Brightness = 1
+    Lighting.OutdoorAmbient = Color3.new(0.5, 0.5, 0.5)
+
+    for _, part in pairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Material = Enum.Material.Plastic
+            part.CastShadow = true
+        elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then
+            part.Enabled = true
+        elseif part:IsA("Decal") or part:IsA("Texture") then
+            part.Transparency = 0
+        end
+    end
+
+    local player = Players.LocalPlayer
+    if player.Character then
+        for _, obj in pairs(player.Character:GetDescendants()) do
+            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+                obj.Enabled = true
+            end
+        end
+    end
+end
+
+-- Tắt/Bật fix lag khi nhấn nút
+ToggleButton.MouseButton1Click:Connect(function()
+    isLagFixEnabled = not isLagFixEnabled
+
+    if isLagFixEnabled then
+        optimizeGraphics()
+        ToggleButton.Text = "Fix Lag ON"
+    else
+        resetGraphics()
+        ToggleButton.Text = "Fix Lag OFF"
+    end
+end)
