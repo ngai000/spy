@@ -12,10 +12,10 @@ local Islands = {
 		Position = Vector3.new(270.40, 21.53, 50.72),
 		LookVector = Vector3.new(1.00, 0.00, -0.04)
 	},
-	["Dao2"] = {
-		Position = Vector3.new(1769.54, 18.72, -376.28),
-		LookVector = Vector3.new(0.60, 0.00, 0.80)
-	},
+   ["Dao2"] = {
+        Position = Vector3.new(1736.32, 18.04, -352.39),
+        LookVector = Vector3.new(0.60, 0.00, 0.80)
+    },
 	["Dao3"] = {
 		Position = Vector3.new(915.57, 17.63, 1242.17),
 		LookVector = Vector3.new(0.64, 0.00, -0.77)
