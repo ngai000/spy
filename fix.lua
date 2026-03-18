@@ -3,17 +3,18 @@ local StarterGui = game:GetService("StarterGui")
 local HttpService = game:GetService("HttpService")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
-local Stats = game:GetService("Stats")
-local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
+
 local FILE = "lock_position.json"
+
+-- Danh sách vị trí các đảo
 local Islands = {
 	["Dao1"] = {
 		Position = Vector3.new(270.40, 21.53, 50.72),
 		LookVector = Vector3.new(1.00, 0.00, -0.04)
 	},
-	["Dao2"] = {
+    ["Dao2"] = {
 		Position = Vector3.new(1736.32, 18.04, -352.39),
 		LookVector = Vector3.new(0.60, 0.00, 0.80)
 	},
@@ -36,8 +37,10 @@ local lockEnabled = true
 local bossPresent = false
 local returning = false
 local currentBossIsland = nil
+local lastCheckTime = 0
 local moveToBossPosition = false
-local isMoving = false          
+
+-- load vị trí
 pcall(function()
 	if readfile and isfile and isfile(FILE) then
 		local data = HttpService:JSONDecode(readfile(FILE))
@@ -79,66 +82,36 @@ local function distance(a,b)
 	return (a.Position - b.Position).Magnitude
 end
 
-local function moveSmooth(targetCFrame, stepSize, moveType)
-	if isMoving then return end
+-- Hàm di chuyển đến vị trí boss với Tween
+local function moveToBossPositionSmooth(targetCFrame)
 	local hrp = getHRP()
 	if not hrp then return end
-
-	isMoving = true
-	if moveType == "lock" then
-		returning = true
-	elseif moveType == "boss" then
-		moveToBossPosition = true
-	end
-
-	local targetPos = targetCFrame.Position
-	local maxSteps = 1000
-	local steps = 0
-
-	while steps < maxSteps do
 	
-		if moveType == "lock" and (not lockEnabled or bossPresent) then
-			break
-		end
-		if moveType == "boss" and (not bossPresent or not currentBossIsland) then
-			break
-		end
-
-		local hrp = getHRP()
-		if not hrp then break end
-
-		local currentPos = hrp.Position
-		local distLeft = (targetPos - currentPos).Magnitude
-
-		if distLeft <= stepSize then
-			
-			hrp.CFrame = targetCFrame
-			break
-		else
-		
-			local dir = (targetPos - currentPos).Unit
-			local newPos = currentPos + dir * stepSize
-			
-			local rot = hrp.CFrame - hrp.Position
-			hrp.CFrame = CFrame.new(newPos) * rot
-		end
-
-		steps = steps + 1
-		task.wait(0.1)
-	end
-
-	isMoving = false
-	returning = false
+	returning = true
+	moveToBossPosition = true
+	
+	-- Tạo hiệu ứng di chuyển mượt
+	local tweenInfo = TweenInfo.new(
+		2, -- Thời gian di chuyển
+		Enum.EasingStyle.Quad,
+		Enum.EasingDirection.Out
+	)
+	
+	local goal = {
+		CFrame = targetCFrame
+	}
+	
+	local tween = TweenService:Create(hrp, tweenInfo, goal)
+	tween:Play()
+	
+	-- Chờ tween hoàn thành
+	tween.Completed:Wait()
+	
 	moveToBossPosition = false
+	returning = false
 end
 
-
-local function returnToLock()
-	if not savedCFrame or not lockEnabled or bossPresent or isMoving then return end
-	moveSmooth(savedCFrame, 10, "lock")
-end
-
-
+-- Hàm lấy CFrame từ thông tin đảo
 local function getIslandCFrame(islandName)
 	local island = Islands[islandName]
 	if island then
@@ -147,30 +120,33 @@ local function getIslandCFrame(islandName)
 	return nil
 end
 
-
+-- Hàm kiểm tra và di chuyển đến vị trí boss
 local function checkAndMoveToBossPosition()
-	if not bossPresent or not currentBossIsland or isMoving then return end
-
+	if not bossPresent or not currentBossIsland then return end
+	
 	local targetCFrame = getIslandCFrame(currentBossIsland)
 	if not targetCFrame then return end
-
+	
 	local hrp = getHRP()
 	if not hrp then return end
-
+	
+	-- Kiểm tra khoảng cách với vị trí boss
 	if distance(hrp.CFrame, targetCFrame) > 5 then
 		notify("Đang di chuyển đến vị trí " .. currentBossIsland)
-		moveSmooth(targetCFrame, 10, "boss")
+		moveToBossPositionSmooth(targetCFrame)
 	else
 		notify("Đã ở vị trí " .. currentBossIsland)
 	end
 end
 
-
+-- check boss
 local function checkBoss()
 	local z = workspace:FindFirstChild("BossZones")
 	if not z then return end
-
+	
 	local island = nil
+	
+	-- Tìm đảo có boss
 	for i = 1, 7 do
 		local name = "Island "..i
 		if z:FindFirstChild(name) and z[name]:FindFirstChild("BossSpawnZone") then
@@ -178,18 +154,23 @@ local function checkBoss()
 			break
 		end
 	end
-
+	
 	if island then
+		-- Chuyển đổi tên island sang định dạng trong bảng Islands
 		local islandKey = "Dao"..string.match(island, "%d+")
+		
 		if not bossPresent then
 			bossPresent = true
 			currentBossIsland = islandKey
 			notify("Boss ở "..islandKey)
-
+			
+			-- Chờ 10 giây rồi kiểm tra vị trí
 			task.spawn(function()
 				task.wait(10)
 				if bossPresent and currentBossIsland then
 					checkAndMoveToBossPosition()
+					
+					-- Bắt đầu kiểm tra định kỳ mỗi 3 giây
 					while bossPresent and currentBossIsland do
 						task.wait(3)
 						checkAndMoveToBossPosition()
@@ -203,27 +184,69 @@ local function checkBoss()
 			currentBossIsland = nil
 			moveToBossPosition = false
 			notify("Boss biến mất")
-
+			
 			task.spawn(function()
 				task.wait(15)
 				if lockEnabled and savedCFrame and not bossPresent and not returning then
-					returnToLock()
+					smoothReturn()
 				end
 			end)
 		end
 	end
 end
 
-local lockGui = Instance.new("ScreenGui")
-lockGui.Name = "BossCheckerGUI"
-lockGui.Parent = game.CoreGui
+-- quay lại từng bước
+local function smoothReturn()
+	if not savedCFrame then return end
+	
+	local hrp = getHRP()
+	if not hrp then return end
+	
+	returning = true
+	
+	while distance(hrp.CFrame, savedCFrame) > 10 and not bossPresent and not moveToBossPosition do
+		local dir = (savedCFrame.Position - hrp.Position).Unit
+		hrp.CFrame = hrp.CFrame + dir * 10
+		task.wait(0.1)
+	end
+	
+	if not bossPresent and not moveToBossPosition then
+		hrp.CFrame = savedCFrame
+	end
+	
+	returning = false
+end
 
-local frame = Instance.new("Frame", lockGui)
+-- lock position check (chỉ hoạt động khi không có boss và không đang di chuyển)
+task.spawn(function()
+	while true do
+		if lockEnabled and savedCFrame and not bossPresent and not returning and not moveToBossPosition then
+			local hrp = getHRP()
+			if hrp then
+				if distance(hrp.CFrame, savedCFrame) > 15 then
+					hrp.CFrame = savedCFrame
+				end
+			end
+		end
+		task.wait(3)
+	end
+end)
+
+-- boss scan
+task.spawn(function()
+	while true do
+		checkBoss()
+		task.wait(3)
+	end
+end)
+
+-- GUI nhỏ gọn
+local gui = Instance.new("ScreenGui", game.CoreGui)
+
+local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 90, 0, 55)
 frame.Position = UDim2.new(0, 10, 0, 10)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.Active = true
-frame.Draggable = true
 
 local set = Instance.new("TextButton", frame)
 set.Size = UDim2.new(1, 0, 0, 25)
@@ -240,6 +263,38 @@ toggle.TextScaled = true
 toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 toggle.TextColor3 = Color3.new(1, 1, 1)
 
+-- kéo GUI
+local dragging = false
+local dragStart
+local startPos
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
+	end
+end)
+
+frame.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- save vị trí
 set.MouseButton1Click:Connect(function()
 	local hrp = getHRP()
 	if hrp then
@@ -249,68 +304,8 @@ set.MouseButton1Click:Connect(function()
 	end
 end)
 
+-- toggle
 toggle.MouseButton1Click:Connect(function()
 	lockEnabled = not lockEnabled
 	toggle.Text = lockEnabled and "LOCK ON" or "LOCK OFF"
-end)
-
-
-local infoGui = Instance.new("ScreenGui")
-infoGui.Name = "InfoStats"
-infoGui.Parent = game.CoreGui
-
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Parent = infoGui
-infoLabel.Size = UDim2.new(0, 200, 0, 70)
-infoLabel.Position = UDim2.new(0, 5, 0, 80)  
-infoLabel.BackgroundTransparency = 0.3
-infoLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-infoLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-infoLabel.TextStrokeTransparency = 0
-infoLabel.Font = Enum.Font.SourceSansBold
-infoLabel.TextSize = 18
-infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local fps = 0
-local frames = 0
-local last = tick()
-
-RunService.RenderStepped:Connect(function()
-	frames = frames + 1
-	if tick() - last >= 1 then
-		fps = frames
-		frames = 0
-		last = tick()
-	end
-end)
-
-
-task.spawn(function()
-	while true do
-		local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-		local players = #Players:GetPlayers()
-		infoLabel.Text = " Ping: "..ping.." ms\n FPS: "..fps.."\n Players: "..players
-		task.wait(1)
-	end
-end)
-
-task.spawn(function()
-	while true do
-		if lockEnabled and savedCFrame and not bossPresent and not returning and not moveToBossPosition then
-			local hrp = getHRP()
-			if hrp then
-				if distance(hrp.CFrame, savedCFrame) > 15 then
-				
-					task.spawn(returnToLock)
-				end
-			end
-		end
-		task.wait(3)
-	end
-end)
-task.spawn(function()
-	while true do
-		checkBoss()
-		task.wait(3)
-	end
 end)
