@@ -5,13 +5,7 @@ local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Stats = game:GetService("Stats")
 local RunService = game:GetService("RunService")
-
 local player = Players.LocalPlayer
-
--- ==========================================================================
--- PHẦN 1: BOSS CHECKER & LOCK POSITION
--- ==========================================================================
-
 local FILE = "lock_position.json"
 local Islands = {
 	["Dao1"] = {
@@ -35,7 +29,6 @@ local Islands = {
 		LookVector = Vector3.new(-0.79, 0.00, 0.61)
 	}
 }
-
 local savedCFrame = nil
 local lockEnabled = true
 local bossPresent = false
@@ -43,8 +36,6 @@ local returning = false
 local currentBossIsland = nil
 local moveToBossPosition = false
 local isMoving = false
-
--- Đọc vị trí đã lưu
 pcall(function()
 	if readfile and isfile and isfile(FILE) then
 		local data = HttpService:JSONDecode(readfile(FILE))
@@ -56,7 +47,6 @@ pcall(function()
 		)
 	end
 end)
-
 local function savePosition(cf)
 	local comp = {cf:GetComponents()}
 	local save = {
@@ -67,7 +57,6 @@ local function savePosition(cf)
 	}
 	writefile(FILE,HttpService:JSONEncode(save))
 end
-
 local function notify(t)
 	StarterGui:SetCore("SendNotification",{
 		Title="Boss Checker",
@@ -75,30 +64,25 @@ local function notify(t)
 		Duration=3
 	})
 end
-
 local function getHRP()
 	if player.Character then
 		return player.Character:FindFirstChild("HumanoidRootPart")
 	end
 end
-
 local function distance(a,b)
 	return (a.Position - b.Position).Magnitude
 end
 
--- Di chuyển mượt theo từng bước 10 studs
 local function moveSmooth(targetCFrame, stepSize, moveType)
 	if isMoving then return end
 	local hrp = getHRP()
 	if not hrp then return end
-
 	isMoving = true
 	if moveType == "lock" then
 		returning = true
 	elseif moveType == "boss" then
 		moveToBossPosition = true
 	end
-
 	local targetPos = targetCFrame.Position
 	local maxSteps = 1000
 	local steps = 0
@@ -106,7 +90,6 @@ local function moveSmooth(targetCFrame, stepSize, moveType)
 	while steps < maxSteps do
 		if moveType == "lock" and (not lockEnabled or bossPresent) then break end
 		if moveType == "boss" and (not bossPresent or not currentBossIsland) then break end
-
 		local hrp = getHRP()
 		if not hrp then break end
 
@@ -124,7 +107,7 @@ local function moveSmooth(targetCFrame, stepSize, moveType)
 		end
 
 		steps = steps + 1
-		task.wait(0.1)
+		task.wait(0.01)
 	end
 
 	isMoving = false
@@ -134,7 +117,7 @@ end
 
 local function returnToLock()
 	if not savedCFrame or not lockEnabled or bossPresent or isMoving then return end
-	moveSmooth(savedCFrame, 10, "lock")
+	moveSmooth(savedCFrame, 5, "lock")
 end
 
 local function getIslandCFrame(islandName)
@@ -208,9 +191,6 @@ local function checkBoss()
 	end
 end
 
--- ==========================================================================
--- GUI cho Boss Checker
--- ==========================================================================
 local lockGui = Instance.new("ScreenGui")
 lockGui.Name = "BossCheckerGUI"
 lockGui.Parent = game.CoreGui
@@ -251,9 +231,6 @@ toggle.MouseButton1Click:Connect(function()
 	toggle.Text = lockEnabled and "LOCK ON" or "LOCK OFF"
 end)
 
--- ==========================================================================
--- PHẦN 2: HIỂN THỊ PING + FPS + PLAYER COUNT
--- ==========================================================================
 local infoGui = Instance.new("ScreenGui")
 infoGui.Name = "InfoStats"
 infoGui.Parent = game.CoreGui
@@ -292,11 +269,6 @@ task.spawn(function()
 	end
 end)
 
--- ==========================================================================
--- CÁC VÒNG LẶP CHÍNH (ĐÃ TĂNG LÊN 7 GIÂY)
--- ==========================================================================
-
--- Vòng lặp giữ vị trí (lock)
 task.spawn(function()
 	while true do
 		if lockEnabled and savedCFrame and not bossPresent and not returning and not moveToBossPosition then
@@ -307,7 +279,7 @@ task.spawn(function()
 				end
 			end
 		end
-		task.wait(7)  -- Từ 3s lên 7s
+		task.wait(15)  
 	end
 end)
 
@@ -315,6 +287,6 @@ end)
 task.spawn(function()
 	while true do
 		checkBoss()
-		task.wait(7)  -- Từ 3s lên 7s
+		task.wait(15)  
 	end
 end)
