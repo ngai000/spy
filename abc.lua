@@ -309,7 +309,7 @@ task.spawn(function()
 				end
 			end
 		end
-		task.wait(7)
+		task.wait(15)
 	end
 end)
 
@@ -317,6 +317,6 @@ end)
 task.spawn(function()
 	while true do
 		checkBoss()
-		task.wait(7)
+		task.wait(15)
 	end
 end)
