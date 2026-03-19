@@ -148,6 +148,7 @@ local function getIslandCFrame(islandName)
 end
 
 local function checkAndMoveToBossPosition()
+	if not bossMoveEnabled then return end  -- thêm dòng này
 	if not bossPresent or not currentBossIsland or isMoving then return end
 	local targetCFrame = getIslandCFrame(currentBossIsland)
 	if not targetCFrame then return end
@@ -180,18 +181,21 @@ local function checkBoss()
 		if not bossPresent then
 			bossPresent = true
 			currentBossIsland = islandKey
-			notify("Boss ở "..islandKey)
-
-			task.spawn(function()
-				task.wait(10)
-				if bossPresent and currentBossIsland then
-					checkAndMoveToBossPosition()
-					while bossPresent and currentBossIsland do
-						task.wait(7)
+			if bossMoveEnabled then
+				notify("Boss ở "..islandKey)
+				task.spawn(function()
+					task.wait(10)
+					if bossPresent and currentBossIsland and bossMoveEnabled then
 						checkAndMoveToBossPosition()
+						while bossPresent and currentBossIsland and bossMoveEnabled do
+							task.wait(7)
+							checkAndMoveToBossPosition()
+						end
 					end
-				end
-			end)
+				end)
+			else
+				notify("Boss ở "..islandKey.." (tự động di chuyển tắt)")
+			end
 		end
 	else
 		if bossPresent then
@@ -209,36 +213,49 @@ local function checkBoss()
 		end
 	end
 end
-
--- ==========================================================================
--- GUI cho Boss Checker
--- ==========================================================================
-local lockGui = Instance.new("ScreenGui")
+	local lockGui = Instance.new("ScreenGui")
 lockGui.Name = "BossCheckerGUI"
 lockGui.Parent = game.CoreGui
 
+-- Mở rộng khung để chứa 3 nút
 local frame = Instance.new("Frame", lockGui)
-frame.Size = UDim2.new(0, 90, 0, 55)
+frame.Size = UDim2.new(0, 90, 0, 85)  -- tăng từ 55 lên 85
 frame.Position = UDim2.new(0, 10, 0, 10)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.Active = true
 frame.Draggable = true
 
+-- Nút SET (vị trí cũ)
 local set = Instance.new("TextButton", frame)
 set.Size = UDim2.new(1, 0, 0, 25)
+set.Position = UDim2.new(0, 0, 0, 0)
 set.Text = "SET"
 set.TextScaled = true
 set.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 set.TextColor3 = Color3.new(1, 1, 1)
 
+-- Nút LOCK ON/OFF
 local toggle = Instance.new("TextButton", frame)
 toggle.Size = UDim2.new(1, 0, 0, 25)
-toggle.Position = UDim2.new(0, 0, 0, 28)
+toggle.Position = UDim2.new(0, 0, 0, 28)  -- dưới SET 28px
 toggle.Text = "LOCK ON"
 toggle.TextScaled = true
 toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 toggle.TextColor3 = Color3.new(1, 1, 1)
 
+-- Nút BOSS ON/OFF (mới)
+local bossToggle = Instance.new("TextButton", frame)
+bossToggle.Size = UDim2.new(1, 0, 0, 25)
+bossToggle.Position = UDim2.new(0, 0, 0, 56)  -- dưới LOCK 28px
+bossToggle.Text = "BOSS ON"
+bossToggle.TextScaled = true
+bossToggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+bossToggle.TextColor3 = Color3.new(1, 1, 1)
+
+-- Biến điều khiển boss move (thêm ở đầu script cùng các biến khác)
+local bossMoveEnabled = true
+
+-- Sự kiện nút SET
 set.MouseButton1Click:Connect(function()
 	local hrp = getHRP()
 	if hrp then
@@ -248,11 +265,18 @@ set.MouseButton1Click:Connect(function()
 	end
 end)
 
+-- Sự kiện nút LOCK
 toggle.MouseButton1Click:Connect(function()
 	lockEnabled = not lockEnabled
 	toggle.Text = lockEnabled and "LOCK ON" or "LOCK OFF"
 end)
 
+-- Sự kiện nút BOSS
+bossToggle.MouseButton1Click:Connect(function()
+	bossMoveEnabled = not bossMoveEnabled
+	bossToggle.Text = bossMoveEnabled and "BOSS ON" or "BOSS OFF"
+	notify("Tự động di chuyển đến boss: " .. (bossMoveEnabled and "BẬT" or "TẮT"))
+end)
 -- ==========================================================================
 -- PHẦN 2: HIỂN THỊ PING + FPS + PLAYER COUNT
 -- ==========================================================================
