@@ -5,6 +5,7 @@ local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Stats = game:GetService("Stats")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 
@@ -45,6 +46,7 @@ local returning = false
 local currentBossIsland = nil
 local moveToBossPosition = false
 local isMoving = false
+local bossMoveEnabled = false  -- <-- mặc định là OFF
 
 -- Đọc vị trí đã lưu từ file riêng của tài khoản
 pcall(function()
@@ -88,7 +90,26 @@ local function distance(a,b)
 	return (a.Position - b.Position).Magnitude
 end
 
--- Di chuyển mượt theo từng bước 10 studs
+-- ===== HÀM RAYCAST ĐỂ BÁM MẶT ĐẤT =====
+local function getGroundPosition(pos)
+	local character = player.Character
+	if not character then return nil end
+	local hrp = getHRP()
+	if not hrp then return nil end
+
+	local rayOrigin = pos + Vector3.new(0, 5, 0)
+	local rayDir = Vector3.new(0, -15, 0) -- chiều dài đủ lớn để tìm đất
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+	raycastParams.FilterDescendantsInstances = {character}
+	local result = Workspace:Raycast(rayOrigin, rayDir, raycastParams)
+	if result then
+		return result.Position
+	end
+	return nil
+end
+
+-- Di chuyển mượt với noclip & bám mặt đất
 local function moveSmooth(targetCFrame, stepSize, moveType)
 	if isMoving then return end
 	local hrp = getHRP()
@@ -110,17 +131,36 @@ local function moveSmooth(targetCFrame, stepSize, moveType)
 		if moveType == "boss" and (not bossPresent or not currentBossIsland) then break end
 
 		local hrp = getHRP()
-		if not hrp then break end
+		local character = player.Character
+		if not hrp or not character then break end
 
+		local humanoid = character:FindFirstChild("Humanoid")
 		local currentPos = hrp.Position
 		local distLeft = (targetPos - currentPos).Magnitude
 
 		if distLeft <= stepSize then
-			hrp.CFrame = targetCFrame
+			-- bước cuối, cập nhật vị trí và bám đất
+			local finalPos = targetCFrame.Position
+			if humanoid then
+				local ground = getGroundPosition(finalPos)
+				if ground then
+					finalPos = Vector3.new(finalPos.X, ground.Y + humanoid.HipHeight, finalPos.Z)
+				end
+			end
+			hrp.CFrame = CFrame.new(finalPos) * (targetCFrame - targetCFrame.Position)
 			break
 		else
 			local dir = (targetPos - currentPos).Unit
 			local newPos = currentPos + dir * stepSize
+
+			-- Bám sát mặt đất (noclip nhưng không rơi)
+			if humanoid then
+				local ground = getGroundPosition(newPos)
+				if ground then
+					newPos = Vector3.new(newPos.X, ground.Y + humanoid.HipHeight, newPos.Z)
+				end
+			end
+
 			local rot = hrp.CFrame - hrp.Position
 			hrp.CFrame = CFrame.new(newPos) * rot
 		end
@@ -148,7 +188,7 @@ local function getIslandCFrame(islandName)
 end
 
 local function checkAndMoveToBossPosition()
-	if not bossMoveEnabled then return end  -- thêm dòng này
+	if not bossMoveEnabled then return end
 	if not bossPresent or not currentBossIsland or isMoving then return end
 	local targetCFrame = getIslandCFrame(currentBossIsland)
 	if not targetCFrame then return end
@@ -213,19 +253,19 @@ local function checkBoss()
 		end
 	end
 end
-	local lockGui = Instance.new("ScreenGui")
+
+-- ===== GUI VỚI 3 NÚT =====
+local lockGui = Instance.new("ScreenGui")
 lockGui.Name = "BossCheckerGUI"
 lockGui.Parent = game.CoreGui
 
--- Mở rộng khung để chứa 3 nút
 local frame = Instance.new("Frame", lockGui)
-frame.Size = UDim2.new(0, 90, 0, 85)  -- tăng từ 55 lên 85
+frame.Size = UDim2.new(0, 90, 0, 85)
 frame.Position = UDim2.new(0, 10, 0, 10)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.Active = true
 frame.Draggable = true
 
--- Nút SET (vị trí cũ)
 local set = Instance.new("TextButton", frame)
 set.Size = UDim2.new(1, 0, 0, 25)
 set.Position = UDim2.new(0, 0, 0, 0)
@@ -234,28 +274,22 @@ set.TextScaled = true
 set.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 set.TextColor3 = Color3.new(1, 1, 1)
 
--- Nút LOCK ON/OFF
 local toggle = Instance.new("TextButton", frame)
 toggle.Size = UDim2.new(1, 0, 0, 25)
-toggle.Position = UDim2.new(0, 0, 0, 28)  -- dưới SET 28px
+toggle.Position = UDim2.new(0, 0, 0, 28)
 toggle.Text = "LOCK ON"
 toggle.TextScaled = true
 toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 toggle.TextColor3 = Color3.new(1, 1, 1)
 
--- Nút BOSS ON/OFF (mới)
 local bossToggle = Instance.new("TextButton", frame)
 bossToggle.Size = UDim2.new(1, 0, 0, 25)
-bossToggle.Position = UDim2.new(0, 0, 0, 56)  -- dưới LOCK 28px
-bossToggle.Text = "BOSS ON"
+bossToggle.Position = UDim2.new(0, 0, 0, 56)
+bossToggle.Text = "BOSS OFF"   -- mặc định OFF
 bossToggle.TextScaled = true
 bossToggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 bossToggle.TextColor3 = Color3.new(1, 1, 1)
 
--- Biến điều khiển boss move (thêm ở đầu script cùng các biến khác)
-local bossMoveEnabled = true
-
--- Sự kiện nút SET
 set.MouseButton1Click:Connect(function()
 	local hrp = getHRP()
 	if hrp then
@@ -265,18 +299,17 @@ set.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Sự kiện nút LOCK
 toggle.MouseButton1Click:Connect(function()
 	lockEnabled = not lockEnabled
 	toggle.Text = lockEnabled and "LOCK ON" or "LOCK OFF"
 end)
 
--- Sự kiện nút BOSS
 bossToggle.MouseButton1Click:Connect(function()
 	bossMoveEnabled = not bossMoveEnabled
 	bossToggle.Text = bossMoveEnabled and "BOSS ON" or "BOSS OFF"
 	notify("Tự động di chuyển đến boss: " .. (bossMoveEnabled and "BẬT" or "TẮT"))
 end)
+
 -- ==========================================================================
 -- PHẦN 2: HIỂN THỊ PING + FPS + PLAYER COUNT
 -- ==========================================================================
@@ -321,8 +354,6 @@ end)
 -- ==========================================================================
 -- CÁC VÒNG LẶP CHÍNH
 -- ==========================================================================
-
--- Vòng lặp giữ vị trí (lock)
 task.spawn(function()
 	while true do
 		if lockEnabled and savedCFrame and not bossPresent and not returning and not moveToBossPosition then
@@ -337,7 +368,6 @@ task.spawn(function()
 	end
 end)
 
--- Vòng lặp quét boss
 task.spawn(function()
 	while true do
 		checkBoss()
