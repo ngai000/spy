@@ -46,7 +46,7 @@ local returning = false
 local currentBossIsland = nil
 local moveToBossPosition = false
 local isMoving = false
-local bossMoveEnabled = false  -- <-- mặc định là OFF
+local bossMoveEnabled = false  -- mặc định OFF
 
 -- Đọc vị trí đã lưu từ file riêng của tài khoản
 pcall(function()
@@ -109,6 +109,60 @@ local function getGroundPosition(pos)
 	return nil
 end
 
+-- ===== PHÁT HIỆN RƠI KHỎI MAP =====
+local fallDetectEnabled = true
+local fallCheckDelay = 1
+local isFalling = false
+local fallCheckCount = 0
+
+local function checkAndRecoverFromFall()
+	if not lockEnabled or not savedCFrame then return end
+	
+	local hrp = getHRP()
+	local character = player.Character
+	if not hrp or not character then return end
+	
+	local humanoid = character:FindFirstChild("Humanoid")
+	if not humanoid then return end
+	
+	local currentPos = hrp.Position
+	
+	-- Kiểm tra rơi khỏi map: Y quá thấp (dưới 0) hoặc không tìm thấy ground bên dưới
+	local isBelowMap = currentPos.Y < 0
+	
+	local groundBelow = getGroundPosition(currentPos)
+	local noGroundFound = (groundBelow == nil) and (currentPos.Y > 0) and (currentPos.Y < 1000)
+	
+	if isBelowMap or noGroundFound then
+		if not isFalling then
+			isFalling = true
+			fallCheckCount = 0
+		end
+		fallCheckCount = fallCheckCount + 1
+		
+		-- Sau 2 lần kiểm tra (khoảng 2-3 giây) thì xác nhận đang rơi
+		if fallCheckCount >= 2 then
+			notify("⚠️ Phát hiện rơi khỏi map! Đang hồi phục...")
+			task.spawn(function()
+				-- Tạm tắt lock để tránh xung đột
+				local wasMoving = isMoving
+				isMoving = false
+				
+				-- Di chuyển về vị trí đã lưu
+				moveSmooth(savedCFrame, 10, "fall_recover")
+				
+				isMoving = wasMoving
+				isFalling = false
+				fallCheckCount = 0
+				notify("✅ Đã hồi phục về vị trí an toàn")
+			end)
+		end
+	else
+		isFalling = false
+		fallCheckCount = 0
+	end
+end
+
 -- Di chuyển mượt với noclip & bám mặt đất
 local function moveSmooth(targetCFrame, stepSize, moveType)
 	if isMoving then return end
@@ -120,15 +174,27 @@ local function moveSmooth(targetCFrame, stepSize, moveType)
 		returning = true
 	elseif moveType == "boss" then
 		moveToBossPosition = true
+	elseif moveType == "fall_recover" then
+		-- Không set các biến trạng thái khác
 	end
 
 	local targetPos = targetCFrame.Position
 	local maxSteps = 1000
 	local steps = 0
+	
+	-- Tạm thời tắt humanoid state để tránh animation can thiệp
+	local character = player.Character
+	local humanoid = character and character:FindFirstChild("Humanoid")
+	local originalState = nil
+	if humanoid then
+		originalState = humanoid.PlatformStand
+		humanoid.PlatformStand = true
+	end
 
 	while steps < maxSteps do
 		if moveType == "lock" and (not lockEnabled or bossPresent) then break end
 		if moveType == "boss" and (not bossPresent or not currentBossIsland) then break end
+		if moveType == "fall_recover" and not lockEnabled then break end
 
 		local hrp = getHRP()
 		local character = player.Character
@@ -153,7 +219,7 @@ local function moveSmooth(targetCFrame, stepSize, moveType)
 			local dir = (targetPos - currentPos).Unit
 			local newPos = currentPos + dir * stepSize
 
-			-- Bám sát mặt đất (noclip nhưng không rơi)
+			-- Bám sát mặt đất
 			if humanoid then
 				local ground = getGroundPosition(newPos)
 				if ground then
@@ -168,10 +234,18 @@ local function moveSmooth(targetCFrame, stepSize, moveType)
 		steps = steps + 1
 		task.wait(0.1)
 	end
+	
+	-- Khôi phục humanoid state
+	if humanoid and originalState ~= nil then
+		humanoid.PlatformStand = originalState
+	end
 
 	isMoving = false
-	returning = false
-	moveToBossPosition = false
+	if moveType == "lock" then
+		returning = false
+	elseif moveType == "boss" then
+		moveToBossPosition = false
+	end
 end
 
 local function returnToLock()
@@ -285,7 +359,7 @@ toggle.TextColor3 = Color3.new(1, 1, 1)
 local bossToggle = Instance.new("TextButton", frame)
 bossToggle.Size = UDim2.new(1, 0, 0, 25)
 bossToggle.Position = UDim2.new(0, 0, 0, 56)
-bossToggle.Text = "BOSS OFF"   -- mặc định OFF
+bossToggle.Text = "BOSS OFF"
 bossToggle.TextScaled = true
 bossToggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 bossToggle.TextColor3 = Color3.new(1, 1, 1)
@@ -302,6 +376,11 @@ end)
 toggle.MouseButton1Click:Connect(function()
 	lockEnabled = not lockEnabled
 	toggle.Text = lockEnabled and "LOCK ON" or "LOCK OFF"
+	if lockEnabled then
+		notify("Lock đã BẬT")
+	else
+		notify("Lock đã TẮT")
+	end
 end)
 
 bossToggle.MouseButton1Click:Connect(function()
@@ -320,7 +399,7 @@ infoGui.Parent = game.CoreGui
 local infoLabel = Instance.new("TextLabel")
 infoLabel.Parent = infoGui
 infoLabel.Size = UDim2.new(0, 200, 0, 70)
-infoLabel.Position = UDim2.new(0, 5, 0, 80)
+infoLabel.Position = UDim2.new(0, 5, 0, 100)
 infoLabel.BackgroundTransparency = 0.3
 infoLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 infoLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
@@ -354,6 +433,8 @@ end)
 -- ==========================================================================
 -- CÁC VÒNG LẶP CHÍNH
 -- ==========================================================================
+
+-- Vòng lặp giữ vị trí (lock)
 task.spawn(function()
 	while true do
 		if lockEnabled and savedCFrame and not bossPresent and not returning and not moveToBossPosition then
@@ -368,9 +449,20 @@ task.spawn(function()
 	end
 end)
 
+-- Vòng lặp quét boss
 task.spawn(function()
 	while true do
 		checkBoss()
 		task.wait(15)
+	end
+end)
+
+-- Vòng lặp phát hiện rơi khỏi map (chạy liên tục)
+task.spawn(function()
+	while true do
+		if lockEnabled and savedCFrame and not isMoving then
+			checkAndRecoverFromFall()
+		end
+		task.wait(fallCheckDelay)
 	end
 end)
