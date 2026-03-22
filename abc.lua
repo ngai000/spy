@@ -584,7 +584,7 @@ task.spawn(function()
 		if lockEnabled and savedCFrame and not bossPresent and not returning and not moveToBossPosition then
 			local hrp = getHRP()
 			if hrp then
-				if distance(hrp.CFrame, savedCFrame) > 150 then
+				if distance(hrp.CFrame, savedCFrame) > 100 then
 					task.spawn(returnToLock)
 				end
 			end
