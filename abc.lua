@@ -32,6 +32,13 @@ local function formatTime(seconds)
     return string.format("%02d:%02d:%02d", h, m, s)
 end
 
+-- 📅 Lấy thời gian hiện tại (giờ Việt Nam GMT+7)
+local function getCurrentTime()
+    local now = os.time()
+    local vietnamTime = now + 7 * 3600  -- GMT+7
+    return os.date("%H:%M:%S - %d/%m/%Y", vietnamTime)
+end
+
 -- 🎮 Lấy tên game
 local function getGameName()
     local success, info = pcall(function()
@@ -81,15 +88,17 @@ end
 local function sendWebhook()
     local playTime = tick() - joinTime
     local formattedTime = formatTime(playTime)
-
+    local currentTime = getCurrentTime()
+    
     local usernameHidden = "||" .. player.Name .. "||"
     local gameName = getGameName()
     local money, gems = getCurrency()
+    local playerCount = #Players:GetPlayers()  -- Số lượng người trong server
 
     local data = {
-        username = "Boss Checker Tracker",
+        username = "Bot By Ngài 🎩",
         embeds = {{
-            title = "🟢 Trạng thái Online",
+            title = "🟢 Trạng thái tài khoản",
             color = 65280,
             fields = {
                 {
@@ -118,6 +127,11 @@ local function sendWebhook()
                     inline = true
                 },
                 {
+                    name = "👥 Số người chơi",
+                    value = tostring(playerCount),
+                    inline = true
+                },
+                {
                     name = "🆔 Server",
                     value = game.JobId,
                     inline = false
@@ -129,7 +143,7 @@ local function sendWebhook()
                 }
             },
             footer = {
-                text = "Cập nhật mỗi 5 phút | Lock: " .. (lockEnabled and "ON" or "OFF") .. " | Boss Move: " .. (bossMoveEnabled and "ON" or "OFF")
+                text = "🕐 " .. currentTime  -- Thay bằng thời gian hiện tại
             }
         }}
     }
@@ -147,7 +161,6 @@ local function sendWebhook()
         })
     end)
 end
-
 -- ==========================================================================
 -- PHẦN 2: BOSS CHECKER & LOCK POSITION
 -- ==========================================================================
