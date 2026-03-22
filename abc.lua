@@ -6,11 +6,150 @@ local TweenService = game:GetService("TweenService")
 local Stats = game:GetService("Stats")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local player = Players.LocalPlayer
 
 -- ==========================================================================
--- PHẦN 1: BOSS CHECKER & LOCK POSITION
+-- PHẦN 1: WEBHOOK ONLINE STATUS
+-- ==========================================================================
+local webhookURL = "https://discord.com/api/webhooks/1337863794969542736/yKfwH5gqmjxzvABxZQCyhkkKz8RAQJ9Je3ozosJlajaCug-QHBa6J0NbzpLp6Zbwo7Ir"  -- 👈 THAY LINK WEBHOOK CỦA BẠN VÀO ĐÂY
+local joinTime = tick()
+local lastWebhookSend = 0
+
+-- 🧠 Format số: 1000000 -> 1.000.000
+local function formatNumber(num)
+    num = tonumber(num) or 0
+    local str = tostring(math.floor(num))
+    return str:reverse():gsub("(%d%d%d)", "%1."):reverse():gsub("^%.", "")
+end
+
+-- ⏱️ Format time
+local function formatTime(seconds)
+    local h = math.floor(seconds / 3600)
+    local m = math.floor((seconds % 3600) / 60)
+    local s = math.floor(seconds % 60)
+    return string.format("%02d:%02d:%02d", h, m, s)
+end
+
+-- 🎮 Lấy tên game
+local function getGameName()
+    local success, info = pcall(function()
+        return MarketplaceService:GetProductInfo(game.PlaceId)
+    end)
+    return (success and info and info.Name) or "Unknown Game"
+end
+
+-- 🔍 Tìm stat theo nhiều kiểu game
+local function findStat(possibleNames)
+    local ls = player:FindFirstChild("leaderstats")
+    if ls then
+        for _, v in pairs(ls:GetChildren()) do
+            for _, name in pairs(possibleNames) do
+                if string.lower(v.Name):find(name) then
+                    return v.Value
+                end
+            end
+        end
+    end
+
+    for _, v in pairs(player:GetDescendants()) do
+        if v:IsA("IntValue") or v:IsA("NumberValue") then
+            for _, name in pairs(possibleNames) do
+                if string.lower(v.Name):find(name) then
+                    return v.Value
+                end
+            end
+        end
+    end
+
+    return 0
+end
+
+-- 💰 Lấy tiền + gem
+local function getCurrency()
+    local moneyNames = {"money","cash","coin","coins","beli","gold","yen"}
+    local gemNames = {"gem","gems","diamond","ruby"}
+
+    local money = findStat(moneyNames)
+    local gems = findStat(gemNames)
+
+    return formatNumber(money), formatNumber(gems)
+end
+
+-- 📤 Gửi webhook
+local function sendWebhook()
+    local playTime = tick() - joinTime
+    local formattedTime = formatTime(playTime)
+
+    local usernameHidden = "||" .. player.Name .. "||"
+    local gameName = getGameName()
+    local money, gems = getCurrency()
+
+    local data = {
+        username = "Boss Checker Tracker",
+        embeds = {{
+            title = "🟢 Trạng thái Online",
+            color = 65280,
+            fields = {
+                {
+                    name = "👤 Tài khoản",
+                    value = usernameHidden,
+                    inline = false
+                },
+                {
+                    name = "🎮 Game",
+                    value = gameName,
+                    inline = false
+                },
+                {
+                    name = "⏱️ Thời gian trong server",
+                    value = formattedTime,
+                    inline = false
+                },
+                {
+                    name = "💰 Tiền",
+                    value = money,
+                    inline = true
+                },
+                {
+                    name = "💎 Gems",
+                    value = gems,
+                    inline = true
+                },
+                {
+                    name = "🆔 Server",
+                    value = game.JobId,
+                    inline = false
+                },
+                {
+                    name = "🤖 Boss Checker",
+                    value = "Đang hoạt động",
+                    inline = false
+                }
+            },
+            footer = {
+                text = "Cập nhật mỗi 5 phút | Lock: " .. (lockEnabled and "ON" or "OFF") .. " | Boss Move: " .. (bossMoveEnabled and "ON" or "OFF")
+            }
+        }}
+    }
+
+    local jsonData = HttpService:JSONEncode(data)
+
+    pcall(function()
+        request({
+            Url = webhookURL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = jsonData
+        })
+    end)
+end
+
+-- ==========================================================================
+-- PHẦN 2: BOSS CHECKER & LOCK POSITION
 -- ==========================================================================
 
 -- Tạo tên file riêng cho từng tài khoản dựa trên UserId
@@ -98,7 +237,7 @@ local function getGroundPosition(pos)
 	if not hrp then return nil end
 
 	local rayOrigin = pos + Vector3.new(0, 5, 0)
-	local rayDir = Vector3.new(0, -15, 0) -- chiều dài đủ lớn để tìm đất
+	local rayDir = Vector3.new(0, -15, 0)
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
 	raycastParams.FilterDescendantsInstances = {character}
@@ -127,7 +266,6 @@ local function checkAndRecoverFromFall()
 	
 	local currentPos = hrp.Position
 	
-	-- Kiểm tra rơi khỏi map: Y quá thấp (dưới 0) hoặc không tìm thấy ground bên dưới
 	local isBelowMap = currentPos.Y < 0
 	
 	local groundBelow = getGroundPosition(currentPos)
@@ -140,15 +278,12 @@ local function checkAndRecoverFromFall()
 		end
 		fallCheckCount = fallCheckCount + 1
 		
-		-- Sau 2 lần kiểm tra (khoảng 2-3 giây) thì xác nhận đang rơi
 		if fallCheckCount >= 2 then
 			notify("⚠️ Phát hiện rơi khỏi map! Đang hồi phục...")
 			task.spawn(function()
-				-- Tạm tắt lock để tránh xung đột
 				local wasMoving = isMoving
 				isMoving = false
 				
-				-- Di chuyển về vị trí đã lưu
 				moveSmooth(savedCFrame, 10, "fall_recover")
 				
 				isMoving = wasMoving
@@ -182,7 +317,6 @@ local function moveSmooth(targetCFrame, stepSize, moveType)
 	local maxSteps = 1000
 	local steps = 0
 	
-	-- Tạm thời tắt humanoid state để tránh animation can thiệp
 	local character = player.Character
 	local humanoid = character and character:FindFirstChild("Humanoid")
 	local originalState = nil
@@ -205,7 +339,6 @@ local function moveSmooth(targetCFrame, stepSize, moveType)
 		local distLeft = (targetPos - currentPos).Magnitude
 
 		if distLeft <= stepSize then
-			-- bước cuối, cập nhật vị trí và bám đất
 			local finalPos = targetCFrame.Position
 			if humanoid then
 				local ground = getGroundPosition(finalPos)
@@ -219,7 +352,6 @@ local function moveSmooth(targetCFrame, stepSize, moveType)
 			local dir = (targetPos - currentPos).Unit
 			local newPos = currentPos + dir * stepSize
 
-			-- Bám sát mặt đất
 			if humanoid then
 				local ground = getGroundPosition(newPos)
 				if ground then
@@ -235,7 +367,6 @@ local function moveSmooth(targetCFrame, stepSize, moveType)
 		task.wait(0.1)
 	end
 	
-	-- Khôi phục humanoid state
 	if humanoid and originalState ~= nil then
 		humanoid.PlatformStand = originalState
 	end
@@ -390,7 +521,7 @@ bossToggle.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================================================
--- PHẦN 2: HIỂN THỊ PING + FPS + PLAYER COUNT
+-- PHẦN 3: HIỂN THỊ PING + FPS + PLAYER COUNT
 -- ==========================================================================
 local infoGui = Instance.new("ScreenGui")
 infoGui.Name = "InfoStats"
@@ -431,7 +562,7 @@ task.spawn(function()
 end)
 
 -- ==========================================================================
--- CÁC VÒNG LẶP CHÍNH
+-- PHẦN 4: CÁC VÒNG LẶP CHÍNH
 -- ==========================================================================
 
 -- Vòng lặp giữ vị trí (lock)
@@ -457,12 +588,24 @@ task.spawn(function()
 	end
 end)
 
--- Vòng lặp phát hiện rơi khỏi map (chạy liên tục)
+-- Vòng lặp phát hiện rơi khỏi map
 task.spawn(function()
 	while true do
 		if lockEnabled and savedCFrame and not isMoving then
 			checkAndRecoverFromFall()
 		end
 		task.wait(fallCheckDelay)
+	end
+end)
+
+-- Vòng lặp gửi webhook (5 phút)
+task.spawn(function()
+	-- Gửi ngay khi script chạy
+	task.wait(5)
+	sendWebhook()
+	
+	while true do
+		task.wait(300) -- 5 phút
+		sendWebhook()
 	end
 end)
