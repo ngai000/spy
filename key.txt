@@ -1,1 +1,6 @@
-dboijbc4-5e36-48ab-adbe-dcbc6b1780gd
+return {
+    [111111111] = "maru",
+    [123456789] = "sailorpiece",
+    [987654321] = "maru",
+    -- thêm acc mới tại đây
+}
