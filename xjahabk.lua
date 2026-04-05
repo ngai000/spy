@@ -1,4 +1,4 @@
--- https://discord.gg/8wSP7XedR8
+
 
 if getgenv().taolao_Running then
     warn("Script already running!")
