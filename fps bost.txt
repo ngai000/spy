@@ -1,124 +1,268 @@
 
-game:GetService("StarterGui"):SetCore("SendNotification",{
-Title = "🍎Blox Fruit Fix Lag🍎",
-Text = "create by ngài 🎩", 
-Duration = 3
-})
--- Tạo GUI để hiển thị FPS
-local ScreenGui = Instance.new("ScreenGui")
-local TextLabel = Instance.new("TextLabel")
-local ToggleButton = Instance.new("TextButton")
+-- Services
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
--- Đặt tên và bố cục cho GUI
-ScreenGui.Name = "FPSDisplay"
-ScreenGui.Parent = game:GetService("CoreGui")
+-- Configuration
+local CONFIG = {
+    TEXT = "super luck 🍀",
+    FONT = Enum.Font.GothamBlack,
+    
+    -- Hiệu ứng
+    RAINBOW_SPEED = 0.5,        -- Tốc độ đổi màu
+    SHAKE_INTENSITY = 3,         -- Độ rung
+    FADE_INTENSITY = 0.2,        -- Độ fade
+    
+    -- Kích thước
+    WIDTH = 400,
+    HEIGHT = 60,
+    
+    -- Vị trí (có thể tùy chỉnh)
+    POSITION_X = 0.5,
+    POSITION_Y = 0.1,
+}
 
-TextLabel.Parent = ScreenGui
-TextLabel.Size = UDim2.new(0, 100, 0, 30)
-TextLabel.Position = UDim2.new(0, 10, 0, 10)
-TextLabel.BackgroundTransparency = 0.5
-TextLabel.BackgroundColor3 = Color3.new(0, 0, 0)
-TextLabel.TextSize = 14
-TextLabel.TextColor3 = Color3.new(1, 1, 1)
-TextLabel.TextStrokeTransparency = 0.5
-TextLabel.Font = Enum.Font.SourceSansBold
-TextLabel.Text = "FPS: Calculating..."
-
-ToggleButton.Parent = ScreenGui
-ToggleButton.Size = UDim2.new(0, 100, 0, 30)
-ToggleButton.Position = UDim2.new(0, 10, 0, 50)
-ToggleButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-ToggleButton.TextColor3 = Color3.new(1, 1, 1)
-ToggleButton.Text = "Fix Lag OFF"
-ToggleButton.Font = Enum.Font.SourceSansBold
-ToggleButton.TextSize = 14
-
--- Biến trạng thái
-local isLagFixEnabled = false
-
--- Biến để tính FPS
-local lastTime = tick()
-local frameCount = 0
-
--- Cập nhật FPS
-game:GetService("RunService").RenderStepped:Connect(function()
-    frameCount = frameCount + 1
-    local currentTime = tick()
-    if currentTime - lastTime >= 1 then
-        local fps = frameCount / (currentTime - lastTime)
-        TextLabel.Text = string.format("FPS: %.0f", fps)
-        frameCount = 0
-        lastTime = currentTime
+-- Tạo UI nâng cao
+local function createAdvancedUI()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "SuperLuckPro_Advanced"
+    ScreenGui.Parent = game:GetService("CoreGui")
+    ScreenGui.ResetOnSpawn = false
+    
+    -- Container chính với hiệu ứng
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, CONFIG.WIDTH, 0, CONFIG.HEIGHT)
+    MainFrame.Position = UDim2.new(CONFIG.POSITION_X, -CONFIG.WIDTH/2, CONFIG.POSITION_Y, 0)
+    MainFrame.BackgroundTransparency = 1
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Parent = ScreenGui
+    
+    -- Text chính
+    local TextLabel = Instance.new("TextLabel")
+    TextLabel.Size = UDim2.new(1, 0, 1, 0)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Text = CONFIG.TEXT
+    TextLabel.TextScaled = true
+    TextLabel.Font = CONFIG.FONT
+    TextLabel.TextTransparency = 0
+    TextLabel.TextStrokeTransparency = 0.5
+    TextLabel.Parent = MainFrame
+    
+    -- Glow chính
+    local MainStroke = Instance.new("UIStroke")
+    MainStroke.Thickness = 3
+    MainStroke.Transparency = 0
+    MainStroke.LineJoinMode = Enum.LineJoinMode.Round
+    MainStroke.Parent = TextLabel
+    
+    -- Glow phụ (tạo hiệu ứng double glow)
+    local SecondStroke = Instance.new("UIStroke")
+    SecondStroke.Thickness = 6
+    SecondStroke.Transparency = 0.7
+    SecondStroke.LineJoinMode = Enum.LineJoinMode.Round
+    SecondStroke.Parent = TextLabel
+    
+    -- Particles/Sparks effect (các hạt nhỏ xung quanh)
+    local particles = {}
+    for i = 1, 5 do
+        local particle = Instance.new("Frame")
+        particle.Size = UDim2.new(0, 4, 0, 4)
+        particle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        particle.BackgroundTransparency = 0.5
+        particle.BorderSizePixel = 0
+        particle.Parent = MainFrame
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = particle
+        
+        table.insert(particles, particle)
     end
-end)
+    
+    -- Counter để hiển thị FPS hoặc thời gian
+    local InfoLabel = Instance.new("TextLabel")
+    InfoLabel.Size = UDim2.new(1, 0, 0, 15)
+    InfoLabel.Position = UDim2.new(0, 0, 1, 5)
+    InfoLabel.BackgroundTransparency = 1
+    InfoLabel.Text = "✨ Active ✨"
+    InfoLabel.TextScaled = true
+    InfoLabel.Font = Enum.Font.Gotham
+    InfoLabel.TextTransparency = 0.3
+    InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    InfoLabel.Parent = MainFrame
+    
+    return {
+        gui = ScreenGui,
+        mainFrame = MainFrame,
+        textLabel = TextLabel,
+        mainStroke = MainStroke,
+        secondStroke = SecondStroke,
+        infoLabel = InfoLabel,
+        particles = particles,
+    }
+end
 
--- Script giảm lag hợp pháp trong Roblox
-local Players = game:GetService("Players")
-local Lighting = game:GetService("Lighting")
+-- Khởi tạo UI
+local ui = createAdvancedUI()
 
-local function optimizeGraphics()
-    Lighting.GlobalShadows = false
-    Lighting.FogEnd = 100000
-    Lighting.Brightness = 2
-    Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+-- Hàm tạo màu cầu vồng mượt mà
+local function rainbow(t)
+    local r = math.sin(t * 2 * math.pi) * 0.5 + 0.5
+    local g = math.sin((t + 1/3) * 2 * math.pi) * 0.5 + 0.5
+    local b = math.sin((t + 2/3) * 2 * math.pi) * 0.5 + 0.5
+    return Color3.new(r, g, b)
+end
 
-    for _, part in pairs(workspace:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Material = Enum.Material.SmoothPlastic
-            part.CastShadow = false
-        elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then
-            part.Enabled = false
-        elseif part:IsA("Decal") or part:IsA("Texture") then
-            part.Transparency = 0.5
+-- Hiệu ứng nâng cao
+local function runEffects()
+    local startTime = tick()
+    local frameCount = 0
+    local fps = 60
+    
+    -- Tính FPS (tùy chọn)
+    RunService.RenderStepped:Connect(function()
+        frameCount = frameCount + 1
+    end)
+    
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            fps = frameCount
+            frameCount = 0
+            
+            -- Cập nhật info label với FPS
+            pcall(function()
+                ui.infoLabel.Text = string.format("✨ Active | %d FPS ✨", fps)
+            end)
         end
+    end)
+    
+    -- Main animation loop
+    local t = 0
+    local particleAngles = {}
+    for i = 1, #ui.particles do
+        particleAngles[i] = (i - 1) * (360 / #ui.particles)
     end
-
-    local player = Players.LocalPlayer
-    if player.Character then
-        for _, obj in pairs(player.Character:GetDescendants()) do
-            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
-                obj.Enabled = false
-            end
+    
+    while true do
+        t = t + 0.02 * CONFIG.RAINBOW_SPEED
+        local elapsed = tick() - startTime
+        
+        -- Màu cầu vồng chính
+        local color = rainbow(t)
+        
+        -- Áp dụng màu cho text và strokes
+        ui.textLabel.TextColor3 = color
+        ui.mainStroke.Color = color
+        
+        -- Màu phụ cho second stroke (offset)
+        local secondaryColor = rainbow(t + 0.3)
+        ui.secondStroke.Color = secondaryColor
+        
+        -- Hiệu ứng fade (nhấp nháy)
+        local fadeValue = CONFIG.FADE_INTENSITY + math.sin(t * 8) * (CONFIG.FADE_INTENSITY * 0.5)
+        ui.textLabel.TextTransparency = fadeValue
+        
+        -- Hiệu ứng rung
+        local shakeX = math.sin(t * 12) * CONFIG.SHAKE_INTENSITY
+        local shakeY = math.cos(t * 10) * (CONFIG.SHAKE_INTENSITY * 0.7)
+        ui.mainFrame.Position = UDim2.new(
+            CONFIG.POSITION_X, 
+            -CONFIG.WIDTH/2 + shakeX, 
+            CONFIG.POSITION_Y, 
+            shakeY
+        )
+        
+        -- Hiệu ứng particles
+        for i, particle in ipairs(ui.particles) do
+            local angle = particleAngles[i] + (t * 50)
+            local radius = 30 + math.sin(t * 3 + i) * 10
+            
+            local particleX = math.cos(math.rad(angle)) * radius
+            local particleY = math.sin(math.rad(angle)) * radius
+            
+            particle.Position = UDim2.new(0.5, particleX - 2, 0.5, particleY - 2)
+            particle.BackgroundColor3 = rainbow(t + i * 0.1)
+            particle.BackgroundTransparency = 0.3 + math.sin(t * 5 + i) * 0.3
         end
+        
+        -- Scale effect (phóng to thu nhỏ nhẹ)
+        local scale = 1 + math.sin(t * 4) * 0.02
+        ui.textLabel.Size = UDim2.new(scale, 0, scale, 0)
+        
+        -- Sử dụng RunService cho animation mượt hơn
+        RunService.RenderStepped:Wait()
     end
 end
 
-local function resetGraphics()
-    Lighting.GlobalShadows = true
-    Lighting.FogEnd = 1000
-    Lighting.Brightness = 1
-    Lighting.OutdoorAmbient = Color3.new(0.5, 0.5, 0.5)
-
-    for _, part in pairs(workspace:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Material = Enum.Material.Plastic
-            part.CastShadow = true
-        elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then
-            part.Enabled = true
-        elseif part:IsA("Decal") or part:IsA("Texture") then
-            part.Transparency = 0
-        end
-    end
-
-    local player = Players.LocalPlayer
-    if player.Character then
-        for _, obj in pairs(player.Character:GetDescendants()) do
-            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
-                obj.Enabled = true
-            end
-        end
-    end
+-- Thêm nút điều khiển (toggle effects)
+local function addControlButton()
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 30, 0, 30)
+    button.Position = UDim2.new(1, -35, 0, 5)
+    button.Text = "⚙️"
+    button.BackgroundTransparency = 0.8
+    button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    button.BorderSizePixel = 0
+    button.TextScaled = true
+    button.Font = Enum.Font.GothamBold
+    button.Parent = ui.mainFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 15)
+    corner.Parent = button
+    
+    local isPaused = false
+    button.MouseButton1Click:Connect(function()
+        isPaused = not isPaused
+        button.Text = isPaused and "▶️" or "⚙️"
+        -- Thêm logic pause/resume ở đây nếu muốn
+    end)
 end
 
--- Tắt/Bật fix lag khi nhấn nút
-ToggleButton.MouseButton1Click:Connect(function()
-    isLagFixEnabled = not isLagFixEnabled
+-- Draggable functionality
+local function makeDraggable()
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    ui.textLabel.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then -- Chuột phải
+            dragging = true
+            dragStart = input.Position
+            startPos = ui.mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            ui.mainFrame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+            -- Cập nhật vị trí tương đối
+            CONFIG.POSITION_X = startPos.X.Scale
+            CONFIG.POSITION_Y = startPos.Y.Scale
+        end
+    end)
+end
 
-    if isLagFixEnabled then
-        optimizeGraphics()
-        ToggleButton.Text = "Fix Lag ON"
-    else
-        resetGraphics()
-        ToggleButton.Text = "Fix Lag OFF"
-    end
-end)
+-- Thêm các tính năng
+addControlButton()
+makeDraggable()
+
+-- Khởi chạy effects
+runEffects()
+
+print("🌟 Super Luck Pro đã khởi động với hiệu ứng nâng cao!")
+print("💡 Chuột phải để kéo thả | Click ⚙️ để pause/resume")
