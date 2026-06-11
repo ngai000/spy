@@ -6,14 +6,14 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Cấu hình (ĐÃ SỬA - Đéo còn `local getgenv()` ngu ngốc)
 getgenv().KillAuraConfig = {
-    Range = 50,
+    Range = 100,
     HitInterval = 0.1,
     TargetPlayers = false,
     ShowFOV = true,
     FOVColor = Color3.fromRGB(255, 0, 0),
     FOVTransparency = 0.3,
     UseRemoteEvents = true, -- Tự động tìm Remote để gây damage thật
-    DamageMultiplier = 999999 -- Sát thương khổng lồ
+    DamageMultiplier = 99999999999999999999999999999999 -- Sát thương khổng lồ
 }
 
 getgenv().KillAuraEnabled = false
