@@ -26,7 +26,7 @@ local Config = {
     DefaultJump    = 50,
     
     -- Cấu hình Aimbot & ESP (Tinh chỉnh từ FastAttack)
-    AimbotFOV      = 120,        -- Góc FOV thực tế (độ)
+    AimbotFOV      = 50,        -- Góc FOV thực tế (độ)
     MAX_DISTANCE   = 400,         -- Khoảng cách tối đa để aim
     UPDATE_PRIORITY = Enum.RenderPriority.Camera.Value + 1,  -- Độ ưu tiên render
     AimbotSmooth   = 1,           -- 1 = khóa cứng ngay lập tức
