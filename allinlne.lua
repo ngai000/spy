@@ -26,7 +26,7 @@ local Config = {
     DefaultJump    = 50,
     
     -- Cấu hình Aimbot & ESP (Tinh chỉnh từ FastAttack)
-    AimbotFOV      = 50,        -- Góc FOV thực tế (độ)
+    AimbotFOV      = 120,        -- Góc FOV thực tế (độ)
     MAX_DISTANCE   = 400,         -- Khoảng cách tối đa để aim
     UPDATE_PRIORITY = Enum.RenderPriority.Camera.Value + 1,  -- Độ ưu tiên render
     AimbotSmooth   = 1,           -- 1 = khóa cứng ngay lập tức
@@ -658,14 +658,16 @@ end)
 -- ================================================
 CreateSection("🔧  CÔNG CỤ", 40)
 
--- TÍNH NĂNG MỚI: BAY (FLY)
 local flyBtn = CreateActionButton("🚀  Bay (Fly)", 41, Color3.fromRGB(195, 60, 60))
 flyBtn.MouseButton1Click:Connect(function()
     pcall(function() 
         loadstring(game:HttpGet("https://raw.githubusercontent.com/ngai000/spy/refs/heads/main/bay.txt"))() 
     end)
 end)
-
+local dexBtn = CreateActionButton(" kill aurar", 42, Color3.fromRGB(50, 115, 180))
+dexBtn.MouseButton1Click:Connect(function()
+    pcall(function() loadstring(game:HttpGet(("https://raw.githubusercontent.com/ngai000/spy/refs/heads/main/baknsns.lua")))() end)
+end)
 local dexBtn = CreateActionButton("🔍  DEX Explorer", 42, Color3.fromRGB(50, 115, 180))
 dexBtn.MouseButton1Click:Connect(function()
     pcall(function() loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-DeX-Explorer-114771"))() end)
@@ -677,45 +679,92 @@ spyBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ================================================
---      SECTION: CUSTOM SCRIPT (LayoutOrder: 50)
+--      SECTION: REMOTE UTILITY (LayoutOrder: 50)
 -- ================================================
-CreateSection("📝  CUSTOM SCRIPT", 50)
+CreateSection("📝  REMOTE UTILITY", 50)
 
-local scriptBoxFrame = Instance.new("Frame")
-scriptBoxFrame.Size = UDim2.new(1, 0, 0, 90)
-scriptBoxFrame.BackgroundColor3 = Color3.fromRGB(10, 8, 18)
-scriptBoxFrame.BorderSizePixel = 0
-scriptBoxFrame.LayoutOrder = 51
-scriptBoxFrame.ZIndex = 12
-scriptBoxFrame.Parent = ScrollFrame
+local remoteBoxFrame = Instance.new("Frame")
+remoteBoxFrame.Size = UDim2.new(1, 0, 0, 50)
+remoteBoxFrame.BackgroundColor3 = Color3.fromRGB(10, 8, 18)
+remoteBoxFrame.BorderSizePixel = 0
+remoteBoxFrame.LayoutOrder = 51
+remoteBoxFrame.ZIndex = 12
+remoteBoxFrame.Parent = ScrollFrame
 
-local sbCorner = Instance.new("UICorner")
-sbCorner.CornerRadius = UDim.new(0, 8)
-sbCorner.Parent = scriptBoxFrame
+local rbCorner = Instance.new("UICorner")
+rbCorner.CornerRadius = UDim.new(0, 8)
+rbCorner.Parent = remoteBoxFrame
 
-local scriptBox = Instance.new("TextBox")
-scriptBox.Size = UDim2.new(1, -12, 1, -12)
-scriptBox.Position = UDim2.new(0, 6, 0, 6)
-scriptBox.BackgroundTransparency = 1
-scriptBox.PlaceholderText = "-- Nhập script tại đây..."
-scriptBox.PlaceholderColor3 = Color3.fromRGB(70, 65, 95)
-scriptBox.Text = ""
-scriptBox.TextColor3 = Color3.fromRGB(180, 220, 180)
-scriptBox.TextSize = 11
-scriptBox.Font = Enum.Font.Code
-scriptBox.MultiLine = true
-scriptBox.ClearTextOnFocus = false
-scriptBox.TextXAlignment = Enum.TextXAlignment.Left
-scriptBox.TextYAlignment = Enum.TextYAlignment.Top
-scriptBox.ZIndex = 13
-scriptBox.Parent = scriptBoxFrame
+local remoteBox = Instance.new("TextBox")
+remoteBox.Size = UDim2.new(1, -12, 1, -12)
+remoteBox.Position = UDim2.new(0, 6, 0, 6)
+remoteBox.BackgroundTransparency = 1
+remoteBox.PlaceholderText = "Nhập đường dẫn Remote tại đây...\n(Ví dụ: game.ReplicatedStorage.RemoteEvent)"
+remoteBox.PlaceholderColor3 = Color3.fromRGB(70, 65, 95)
+remoteBox.Text = ""
+remoteBox.TextColor3 = Color3.fromRGB(140, 200, 240)
+remoteBox.TextSize = 11
+remoteBox.Font = Enum.Font.Code
+remoteBox.MultiLine = true
+remoteBox.ClearTextOnFocus = false
+remoteBox.TextXAlignment = Enum.TextXAlignment.Left
+remoteBox.TextYAlignment = Enum.TextYAlignment.Top
+remoteBox.ZIndex = 13
+remoteBox.Parent = remoteBoxFrame
 
-local runScriptBtn = CreateActionButton("▶  Chạy Custom Script", 52, Color3.fromRGB(35, 140, 80))
-runScriptBtn.MouseButton1Click:Connect(function()
-    local code = scriptBox.Text
-    if code == "" then return end
-    local loader, err = loadstring(code)
-    if loader then pcall(loader) else warn("[MobileGUI] Lỗi: " .. tostring(err)) end
+-- Đổi nút chạy sang Toggle Button lặp liên tục
+local remoteLoopThread = nil
+local loopRemoteBtn, getLoopState, setLoopState = CreateToggleButton("🔄  Lặp Liên Tục Remote", 52, Color3.fromRGB(35, 140, 80))
+
+local function executeRemoteSpam(pathText)
+    -- Hàm phân tách chuỗi để tìm Object thực tế từ string nhập vào
+    local function targetPath(str)
+        local current = game
+        local sections = str:gsub("^game%.", ""):gsub("^workspace%.", "Workspace."):split(".")
+        if str:sub(1,9) == "workspace" then current = workspace table.remove(sections, 1) end
+        
+        for _, name in ipairs(sections) do
+            if current then
+                current = current:FindFirstChild(name)
+            else
+                return nil
+            end
+        end
+        return current
+    end
+
+    remoteLoopThread = task.spawn(function()
+        while getLoopState() do
+            local remote = targetPath(remoteBox.Text)
+            if remote then
+                if remote:IsA("RemoteEvent") then
+                    remote:FireServer()
+                elseif remote:IsA("UnreliableRemoteEvent") then
+                    remote:FireServer()
+                elseif remote:IsA("RemoteFunction") then
+                    pcall(function() remote:InvokeServer() end)
+                end
+            end
+            task.wait(0.01) -- Đảm bảo tốc độ nhanh nhưng không gây rớt khung hình (Crash/Lag)
+        end
+    end)
+end
+
+loopRemoteBtn.MouseButton1Click:Connect(function()
+    local newState = not getLoopState()
+    setLoopState(newState)
+    
+    if newState then
+        if remoteBox.Text ~= "" then
+            executeRemoteSpam(remoteBox.Text)
+        else
+            setLoopState(false) -- Trả trạng thái nếu rỗng
+        end
+    else
+        if remoteLoopThread then
+            remoteLoopThread = nil
+        end
+    end
 end)
 
 -- ================================================
@@ -864,4 +913,4 @@ RunService.Heartbeat:Connect(function(dt)
     end
 end)
 
-print("[MobileGUI] ✅ Đã tích hợp thành công nút Bay (Fly) vào Công cụ!")
+print("[MobileGUI] ✅ Đã chuyển đổi thành công phân vùng Remote Spam!")
